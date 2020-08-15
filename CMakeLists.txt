@@ -3,38 +3,10 @@ cmake_minimum_required(VERSION 3.2)
 
 project(NodeEditor CXX)
 
-set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-set(CMAKE_DISABLE_SOURCE_CHANGES  ON)
-
-get_directory_property(_has_parent PARENT_DIRECTORY)
-if(_has_parent)
-  set(is_root_project OFF)
-else()
-  set(is_root_project ON)
-endif()
-
-set(NE_DEVELOPER_DEFAULTS "${is_root_project}" CACHE BOOL "Turns on default settings for development of NodeEditor")
-
-option(BUILD_TESTING "Build tests" "${NE_DEVELOPER_DEFAULTS}")
-option(BUILD_EXAMPLES "Build Examples" "${NE_DEVELOPER_DEFAULTS}")
-option(BUILD_SHARED_LIBS "Build as shared library" ON)
-option(NE_FORCE_TEST_COLOR "Force colorized unit test output" OFF)
-
-enable_testing()
-
-if(NE_DEVELOPER_DEFAULTS)
-  set(CMAKE_CXX_STANDARD 14)
-  set(CMAKE_CXX_EXTENSIONS OFF)
-
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
-endif()
-
-add_subdirectory(external)
+#add_subdirectory(external)
 
 # Find the QtWidgets library
-find_package(Qt5 5.3 COMPONENTS
+find_package(Qt5 COMPONENTS
              Core
              Widgets
              Gui
@@ -44,7 +16,7 @@ qt5_add_resources(RESOURCES ./resources/resources.qrc)
 
 # Unfortunately, as we have a split include/src, AUTOMOC doesn't work.
 # We'll have to manually specify some files
-set(CMAKE_AUTOMOC ON)
+#set(CMAKE_AUTOMOC ON)
 
 set(CPP_SOURCE_FILES
   src/Connection.cpp
@@ -72,11 +44,11 @@ set(CPP_SOURCE_FILES
 
 # If we want to give the option to build a static library,
 # set BUILD_SHARED_LIBS option to OFF
-add_library(nodes
+add_library(nodes STATIC
   ${CPP_SOURCE_FILES}
   ${RESOURCES}
 )
-add_library(NodeEditor::nodes ALIAS nodes)
+add_library(${PROJECT_NAME}::nodes ALIAS nodes)
 
 target_include_directories(nodes
   PUBLIC
@@ -98,7 +70,7 @@ target_link_libraries(nodes
 target_compile_definitions(nodes
   PUBLIC
     ${Qt5Widgets_DEFINITIONS}
-    NODE_EDITOR_SHARED
+    NODE_EDITOR_STATIC
   PRIVATE
     NODE_EDITOR_EXPORTS
     #NODE_DEBUG_DRAWING
@@ -107,7 +79,7 @@ target_compile_definitions(nodes
 
 target_compile_options(nodes
   PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4127 /EHsc>
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4127 /EHsc>
     $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
     $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra>
 )
@@ -119,10 +91,23 @@ target_compile_features(nodes
 
 set_target_properties(nodes
   PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    # Required on Unix OS family to be able to be linked into shared libraries.
+    POSITION_INDEPENDENT_CODE ON
 )
+
+# Expose public includes to other
+# subprojects through cache variable.
+set(${PROJECT_NAME}_INCLUDE_DIRS
+      $<INSTALL_INTERFACE:include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+set(${PROJECT_NAME}_DEFINITIONS
+      ${Qt5Widgets_DEFINITIONS}
+      NODE_EDITOR_STATIC
+      CACHE INTERNAL "${PROJECT_NAME}: Definitions" FORCE)
 
 ######
 # Moc
