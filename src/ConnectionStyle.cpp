@@ -81,7 +81,7 @@ setConnectionStyle(QString jsonText)
     auto valueRef = values[#variable]; \
     CONNECTION_STYLE_CHECK_UNDEFINED_VALUE(valueRef, variable) \
     if (CONNECTION_VALUE_EXISTS(valueRef)) \
-      variable = valueRef.toDouble(); \
+      variable = static_cast<float>(valueRef.toDouble()); \
 }
 
 #define CONNECTION_STYLE_READ_BOOL(values, variable)  { \
@@ -128,17 +128,17 @@ loadJsonFromByteArray(QByteArray const &byteArray)
 
   QJsonObject obj = nodeStyleValues.toObject();
 
-  CONNECTION_STYLE_READ_COLOR(obj, ConstructionColor);
-  CONNECTION_STYLE_READ_COLOR(obj, NormalColor);
-  CONNECTION_STYLE_READ_COLOR(obj, SelectedColor);
-  CONNECTION_STYLE_READ_COLOR(obj, SelectedHaloColor);
-  CONNECTION_STYLE_READ_COLOR(obj, HoveredColor);
+  CONNECTION_STYLE_READ_COLOR(obj, ConstructionColor)
+  CONNECTION_STYLE_READ_COLOR(obj, NormalColor)
+  CONNECTION_STYLE_READ_COLOR(obj, SelectedColor)
+  CONNECTION_STYLE_READ_COLOR(obj, SelectedHaloColor)
+  CONNECTION_STYLE_READ_COLOR(obj, HoveredColor)
 
-  CONNECTION_STYLE_READ_FLOAT(obj, LineWidth);
-  CONNECTION_STYLE_READ_FLOAT(obj, ConstructionLineWidth);
-  CONNECTION_STYLE_READ_FLOAT(obj, PointDiameter);
+  CONNECTION_STYLE_READ_FLOAT(obj, LineWidth)
+  CONNECTION_STYLE_READ_FLOAT(obj, ConstructionLineWidth)
+  CONNECTION_STYLE_READ_FLOAT(obj, PointDiameter)
 
-  CONNECTION_STYLE_READ_BOOL(obj, UseDataDefinedColors);
+  CONNECTION_STYLE_READ_BOOL(obj, UseDataDefinedColors)
 }
 
 
@@ -166,13 +166,13 @@ normalColor(QString typeId) const
 
   std::size_t const hue_range = 0xFF;
 
-  qsrand(hash);
-  std::size_t hue = qrand() % hue_range;
+  qsrand(static_cast<unsigned>(hash));
+  std::size_t hue = static_cast<size_t>(qrand()) % hue_range;
 
   std::size_t sat = 120 + hash % 129;
 
-  return QColor::fromHsl(hue,
-                         sat,
+  return QColor::fromHsl(static_cast<int>(hue),
+                         static_cast<int>(sat),
                          160);
 }
 
